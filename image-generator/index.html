@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Generator</title>
+  <link rel="icon" type="image/png" href="https://tmpfiles.org/dl/15209985/ashlynn-repo.png">
+  <style>
+    :root {
+      --primary-color: #8e24aa;
+      --secondary-color: #6200ea;
+      --text-color: #e0e0e0;
+      --background-color: #121212;
+      --hover-color: #512da8;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Google Sans", Arial, sans-serif;
+      background: var(--background-color);
+      color: var(--text-color);
+    }
+
+    .main {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 2.5rem;
+      font-weight: 500;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--secondary-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .status {
+      font-weight: bold;
+      margin: 1rem 0;
+      color: var(--primary-color);
+    }
+
+    .input-container, .dimension-container {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      border: 1px solid var(--primary-color);
+      border-radius: 24px;
+      padding: 0.5rem 1rem;
+      margin: 0 auto 1rem;
+      max-width: 600px;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .input-field, .dimension-select {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      padding: 0.5rem;
+      background-color: transparent;
+      color: var(--text-color);
+    }
+
+    .generate-button, .add-more-button {
+      background: var(--primary-color);
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      padding: 0.7rem 1.5rem;
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: bold;
+      transition: background 0.3s;
+      margin-top: 1rem;
+      display: inline-block;
+    }
+
+    .generate-button:hover, .add-more-button:hover {
+      background: var(--hover-color);
+    }
+
+    #image-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+
+    #image-container img {
+      width: 100%;
+      max-width: 400px;
+      margin: 10px;
+      border: 1px solid var(--primary-color);
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main class="main">
+    <h1 class="title">EvilGPT AI Image Generator</h1>
+    <p class="subtitle">Enter a prompt and select dimensions to generate images</p>
+
+    <div class="input-container">
+      <input type="text" id="prompt" class="input-field" placeholder="Enter image prompt..." required>
+    </div>
+
+    <div class="dimension-container">
+      <select id="dimensions" class="dimension-select" required>
+        <option value="square">Square</option>
+        <option value="tall">Tall</option>
+        <option value="wide">Wide</option>
+      </select>
+    </div>
+
+    <button class="generate-button" onclick="generateImage()">Generate Image</button>
+
+    <div id="status" class="status"></div>
+    <div id="image-container"></div>
+    <button class="add-more-button" onclick="addMoreImages()" style="display: none;">Add More</button>
+
+    <script>
+      let currentPrompt = '';
+      let currentDimensions = '';
+
+      async function generateImage() {
+        currentPrompt = document.getElementById('prompt').value.replace(/ /g, '+');
+        currentDimensions = document.getElementById('dimensions').value;
+        
+        // Hapus gambar lama dan sembunyikan tombol "Add More"
+        document.getElementById('image-container').innerHTML = '';
+        document.querySelector('.add-more-button').style.display = 'none';
+        
+        await fetchImages();
+      }
+
+      async function fetchImages() {
+        const apiUrl = `https://nexlynx.ashlynn.workers.dev/api/image?prompt=${currentPrompt}&dimensions=${currentDimensions}`;
+        
+        const statusElement = document.getElementById('status');
+        const imageContainer = document.getElementById('image-container');
+        statusElement.textContent = "Connecting to API...";
+
+        try {
+          const response = await fetch(apiUrl);
+          statusElement.textContent = "Generating image...";
+          
+          const data = await response.json();
+          
+          if (data.code === 200 && data.status === true) {
+            statusElement.textContent = "Displaying images...";
+            data.image_urls.forEach(url => {
+              const img = document.createElement('img');
+              img.src = url;
+              imageContainer.appendChild(img);
+            });
+            statusElement.textContent = "Images generated successfully!";
+            
+            // Tampilkan tombol "Add More"
+            document.querySelector('.add-more-button').style.display = 'inline-block';
+          } else {
+            statusElement.textContent = "Error generating image. Please try again.";
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          statusElement.textContent = "An error occurred. Please check the console for more details.";
+        }
+      }
+
+      async function addMoreImages() {
+        const statusElement = document.getElementById('status');
+        
+        // Sembunyikan tombol "Add More" dan tampilkan status
+        document.querySelector('.add-more-button').style.display = 'none';
+        statusElement.textContent = "Connecting to API...";
+
+        try {
+          await fetchImages();  // Memanggil API untuk menambahkan lebih banyak gambar
+        } finally {
+          // Mengembalikan tombol "Add More" setelah proses selesai
+          document.querySelector('.add-more-button').style.display = 'inline-block';
+          statusElement.textContent = '';  // Bersihkan status setelah selesai
+        }
+      }
+    </script>
+  </main>
+</body>
+</html>
